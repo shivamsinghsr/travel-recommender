@@ -77,6 +77,13 @@ jobs:
           curl -fsS localhost:8000/ | grep -q "Where next?"
       - name: Logs
         if: always()
-        run: docker compose logs --no-color | tail -200
+        run: docker compose ps -a; docker compose logs --no-color | tail -200
+      - name: Report container logs as annotations
+        if: failure()
+        run: |
+          for svc in api scheduler db redis; do
+            body=$(docker compose logs --no-color --tail 40 "$svc" 2>&1 | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=$svc logs::$body"
+          done
       - if: always()
         run: docker compose down -v

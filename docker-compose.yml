@@ -51,6 +51,8 @@ services:
   scheduler:
     build: .
     command: ["scheduler"]
+    healthcheck:
+      disable: true  # the image's check probes the API port, which this role doesn't serve
     environment:
       <<: *app-env
       TRAIN_INTERVAL_SECONDS: "86400"
