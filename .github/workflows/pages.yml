@@ -1,9 +1,12 @@
-# Builds the in-browser model from data/ and publishes web/ to GitHub Pages.
-name: Deploy demo to GitHub Pages
+# Trains the model, gates it against the live one, and publishes the web app to GitHub Pages.
+# Runs on every push to main, nightly, and on demand.
+name: Train and deploy demo
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 20 * * *"  # 20:17 UTC = 01:47 IST
   workflow_dispatch:
 
 permissions:
@@ -25,9 +28,12 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Export model for the browser
-        run: python -m recsys.export_web --out web/model
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Download the live model (baseline for the publish gate)
+        run: curl -fsSL "${{ steps.pages.outputs.base_url }}/model/model.json" -o live-model.json || echo "no live model yet"
+      - name: Train, evaluate and gate
+        run: python -m recsys.train --export-web web/model --baseline live-model.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web

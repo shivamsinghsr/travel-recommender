@@ -35,6 +35,58 @@ export function userProfile(model, preferences, ratings) {
   return n > 0 ? profile.map((v) => v / n) : null;
 }
 
+/** Solve (M) x = b with Gaussian elimination and partial pivoting (M is small and symmetric positive definite). */
+function solve(M, b) {
+  const n = b.length;
+  const A = M.map((row, i) => [...row, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+    [A[c], A[p]] = [A[p], A[c]];
+    for (let r = c + 1; r < n; r++) {
+      const f = A[r][c] / A[c][c];
+      for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let r = n - 1; r >= 0; r--) {
+    let s = A[r][n];
+    for (let k = r + 1; k < n; k++) s -= A[r][k] * x[k];
+    x[r] = s / A[r][r];
+  }
+  return x;
+}
+
+/** Mirrors recsys.mf.MatrixFactorization.predict: fold the user in, then score every item. */
+export function mfPredict(model, ratings) {
+  const { mu, item_bias: bi, Q, factors: f, reg, bias_reg: breg } = model.cf;
+  const nItems = bi.length;
+  const base = bi.map((b) => mu + b);
+  const rated = ratings.filter(([d]) => model.itemIndex.has(d)).map(([d, r]) => [model.itemIndex.get(d), r]);
+  if (!rated.length) return { pred: base.map((v) => Math.min(5, Math.max(1, v))), best: new Array(nItems).fill(-1) };
+
+  // ridge regression for [p_u, b_u]:  (AᵀA + diag(reg)) x = Aᵀy,  A = [Q_rated | 1]
+  const A = rated.map(([j]) => [...Q[j], 1]);
+  const y = rated.map(([j, r]) => r - mu - bi[j]);
+  const dim = f + 1;
+  const M = Array.from({ length: dim }, (_, a) => Array.from({ length: dim }, (_, b) =>
+    A.reduce((s, row) => s + row[a] * row[b], 0) + (a === b ? (a < f ? reg : breg) : 0)));
+  const rhs = Array.from({ length: dim }, (_, a) => A.reduce((s, row, i) => s + row[a] * y[i], 0));
+  const x = solve(M, rhs);
+  const p = x.slice(0, f), bu = x[f];
+
+  const pred = Q.map((q, j) => Math.min(5, Math.max(1, base[j] + bu + dot(q, p))));
+  const unit = Q.map((q) => { const n = Math.max(norm(q), 1e-12); return q.map((v) => v / n); });
+  const cols = rated.map(([j]) => j);
+  const resid = rated.map(([j, r]) => r - (base[j] + bu));
+  const best = unit.map((u) => {
+    let bestVal = -Infinity, bestLocal = 0;
+    cols.forEach((c, i) => { const v = dot(u, unit[c]) * resid[i]; if (v > bestVal) { bestVal = v; bestLocal = i; } });
+    return bestVal > 0 ? cols[bestLocal] : -1;
+  });
+  return { pred, best };
+}
+
 /** Mirrors recsys.item_knn.ItemKNN.predict. Returns {pred, best} arrays over the item axis. */
 export function itemKnnPredict(model, ratings) {
   const { baseline, sim, k } = model.cf;
@@ -71,7 +123,7 @@ export function itemKnnPredict(model, ratings) {
 }
 
 function reason(model, d, j, ratingMap, prefs, filters, alpha, best) {
-  if (best && alpha >= 0.4 && best[j] >= 0) {
+  if (best && alpha > 0 && alpha >= 0.4 * (model.params.alpha_max ?? 1) && best[j] >= 0) {
     const src = model.destinations[best[j]];
     const r = ratingMap.get(src.id);
     if (r >= 4) return `Because you rated ${src.name} ${r}/5`;
@@ -92,7 +144,8 @@ export function recommend(model, { ratings = [], preferences = [], k = 5, filter
   ratings = ratings.filter(([d]) => model.itemIndex.has(d) && !seen.has(d) && seen.add(d));
   const ratingMap = new Map(ratings);
   const n = ratings.length;
-  const alpha = Math.min(n, params.cf_full_weight_at) / params.cf_full_weight_at;
+  const alphaMax = params.alpha_max ?? 1;
+  const alpha = alphaMax * Math.min(n, params.cf_full_weight_at) / params.cf_full_weight_at;
 
   const profile = userProfile(model, preferences, ratings);
   const other = profile
@@ -101,7 +154,7 @@ export function recommend(model, { ratings = [], preferences = [], k = 5, filter
 
   let pred = null, best = null, score;
   if (n) {
-    ({ pred, best } = itemKnnPredict(model, ratings));
+    ({ pred, best } = model.cf.kind === "mf" ? mfPredict(model, ratings) : itemKnnPredict(model, ratings));
     score = other.map((o, j) => alpha * (pred[j] - 1) / 4 + (1 - alpha) * o);
   } else {
     score = other;
@@ -134,6 +187,7 @@ export function loadModel(json) {
     types: json.meta.types,
     itemIndex: new Map(m.destinations.map((d, j) => [d.id, j])),
     meta: json.meta,
+    metrics: json.metrics || null,
     personas: json.personas,
   };
 }

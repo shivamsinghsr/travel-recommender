@@ -76,6 +76,14 @@ class ItemKNN:
         best = np.where(contrib[np.arange(n_items), best_local] > 0, cols[best_local], -1)
         return np.clip(pred, 1.0, 5.0), support, best
 
+    @classmethod
+    def from_dict(cls, d: dict, item_ids: list[int]) -> ItemKNN:
+        m = cls(k=d["k"])
+        m.sim = np.asarray(d["sim"], dtype=float)
+        m.baseline = np.asarray(d["baseline"], dtype=float)
+        m.item_index = {int(i): j for j, i in enumerate(item_ids)}
+        return m
+
     def to_dict(self) -> dict:
         return {
             "kind": self.name,

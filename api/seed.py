@@ -22,6 +22,7 @@ from recsys.catalog import DATA_DIR, load_destinations
 from . import models
 from .config import ROOT, get_settings
 from .db import Database
+from .security import hash_password
 
 
 def migrate(database_url: str) -> None:
@@ -32,9 +33,12 @@ def migrate(database_url: str) -> None:
     command.upgrade(cfg, "head")
 
 
-def seed(session: Session, data_dir: Path = DATA_DIR) -> bool:
+def seed(session: Session, data_dir: Path = DATA_DIR, demo_password: str | None = None) -> bool:
     if session.scalar(select(models.Destination.id).limit(1)) is not None:
         return False
+    # One hash shared by all sample travellers: they are demo accounts, and hashing
+    # 800 passwords separately would add minutes to every fresh deploy.
+    demo_hash = hash_password(demo_password) if demo_password else None
 
     for d in load_destinations(data_dir / "destinations.csv"):
         session.add(models.Destination(
@@ -45,6 +49,7 @@ def seed(session: Session, data_dir: Path = DATA_DIR) -> bool:
         for row in csv.DictReader(fh):
             session.add(models.User(
                 id=int(row["id"]), name=row["name"], email=row["email"], preferences=row["preferences"],
+                password_hash=demo_hash,
             ))
     session.flush()
     with open(data_dir / "ratings.csv", newline="", encoding="utf-8") as fh:
@@ -70,11 +75,11 @@ def seed(session: Session, data_dir: Path = DATA_DIR) -> bool:
 
 
 def main() -> None:
-    url = get_settings().database_url
-    migrate(url)
-    db = Database(url)
+    settings = get_settings()
+    migrate(settings.database_url)
+    db = Database(settings.database_url)
     with db.SessionLocal() as s:
-        print("seeded" if seed(s) else "already seeded, nothing to do")
+        print("seeded" if seed(s, demo_password=settings.demo_password) else "already seeded, nothing to do")
 
 
 if __name__ == "__main__":

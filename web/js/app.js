@@ -66,43 +66,44 @@ function renderWho() {
   }
   // API mode
   if (backend.signedIn) {
-    const out = el("button", { type: "button", className: "text-button", textContent: "Switch account" });
+    const out = el("button", { type: "button", className: "text-button", textContent: "Sign out" });
     out.addEventListener("click", () => { backend.signOut(); boot(); });
     root.append(el("p", {}, el("strong", { textContent: state.profile?.name || "" })),
       el("p", { className: "account-switch" }, state.profile?.email || "", " ", out));
     return;
   }
-  renderAccountForm(root);
+  renderAccountForm(root, "register");
 }
 
-function renderAccountForm(root) {
+function renderAccountForm(root, mode) {
+  root.replaceChildren();
+  const isNew = mode === "register";
   const err = el("p", { className: "form-error", hidden: true });
   const name = el("input", { type: "text", id: "acct-name", required: true, autocomplete: "name" });
   const email = el("input", { type: "email", id: "acct-email", required: true, autocomplete: "email" });
+  const password = el("input", {
+    type: "password", id: "acct-password", required: true, minLength: isNew ? 8 : 1,
+    autocomplete: isNew ? "new-password" : "current-password",
+  });
   const form = el("form", { className: "account-form" },
-    el("p", { className: "muted", textContent: "Create a profile to save your ratings." }),
-    el("label", {}, "Name", name),
+    el("p", { className: "muted", textContent: isNew ? "Create a profile to save your ratings." : "Welcome back." }),
+    isNew ? el("label", {}, "Name", name) : null,
     el("label", {}, "Email", email),
-    el("button", { type: "submit", className: "button", textContent: "Create profile" }),
+    el("label", {}, isNew ? "Password (8 characters or more)" : "Password", password),
+    el("button", { type: "submit", className: "button", textContent: isNew ? "Create profile" : "Sign in" }),
     err);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
-      await backend.createAccount({ name: name.value.trim(), email: email.value.trim(), preferences: [] });
+      if (isNew) await backend.register({ name: name.value.trim(), email: email.value.trim(), password: password.value });
+      else await backend.login({ email: email.value.trim(), password: password.value });
       await boot();
     } catch (ex) { err.textContent = ex.message; err.hidden = false; }
   });
-
-  const idInput = el("input", { type: "number", id: "acct-id", min: 1, placeholder: "e.g. 42" });
-  const err2 = el("p", { className: "form-error", hidden: true });
-  const existing = el("form", { className: "account-form" },
-    el("label", {}, "Or open an existing profile by ID", idInput),
-    el("button", { type: "submit", className: "button secondary", textContent: "Open profile" }), err2);
-  existing.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try { await backend.useExisting(idInput.value); await boot(); } catch (ex) { err2.textContent = ex.message; err2.hidden = false; }
-  });
-  root.append(form, existing);
+  const swap = el("button", { type: "button", className: "text-button",
+    textContent: isNew ? "Sign in instead" : "Create a profile instead" });
+  swap.addEventListener("click", () => renderAccountForm(root, isNew ? "login" : "register"));
+  root.append(form, el("p", { className: "account-switch" }, isNew ? "Have a profile? " : "New here? ", swap));
 }
 
 function renderInterests() {
@@ -150,7 +151,7 @@ function renderRated() {
 const STRATEGY_TEXT = {
   popular: () => "Pick some interests or rate a place you've been to make these yours. For now, these are the places travellers rate highest.",
   content: () => "Based on the interests you picked. Rate places you've been to bring in travellers like you.",
-  hybrid: (n) => `Blending your interests with your ${n} rating${n === 1 ? "" : "s"}. After ${5 - n} more, travellers like you decide alone.`,
+  hybrid: (n, a) => `Mixing your interests with what travellers like you rated highly (${a}% of the weight), based on your ${n} rating${n === 1 ? "" : "s"}.`,
   cf: () => "Based on travellers whose ratings resemble yours.",
 };
 
@@ -201,7 +202,7 @@ async function renderRecommendations() {
   $("error").hidden = true;
 
   const n = state.profile.ratings.length;
-  $("strategy").textContent = STRATEGY_TEXT[res.strategy](n);
+  $("strategy").textContent = STRATEGY_TEXT[res.strategy](n, Math.round(res.alpha * 100));
   $("blend").hidden = res.strategy === "popular";
   $("blend-cf").style.width = `${Math.round(res.alpha * 100)}%`;
 
@@ -260,20 +261,44 @@ function fillSelect(id, options, key, parse = (v) => v) {
 }
 
 function renderMeta(meta) {
-  const parts = [`${meta.n_ratings?.toLocaleString("en-IN")} ratings`, `collaborative model: ${meta.cf_model}`];
+  const parts = [];
+  if (meta.n_ratings) parts.push(`trained on ${meta.n_ratings.toLocaleString("en-IN")} ratings`);
+  if (meta.cf_model) parts.push(meta.cf_model);
   if (meta.generated_at) parts.push(`built ${new Date(meta.generated_at).toLocaleDateString("en-IN", { dateStyle: "medium" })}`);
   if (meta.model_version) parts.unshift(`Model ${meta.model_version}`);
-  $("model-meta").textContent = parts.join(", ");
+  $("model-meta").textContent = parts.join("; ");
+}
+
+function renderMetrics(metrics) {
+  const root = $("metrics");
+  root.replaceChildren();
+  if (!metrics?.test) return;
+  const rows = Object.entries(metrics.test).map(([name, m]) => {
+    const tr = el("tr", {},
+      el("td", { textContent: name }),
+      el("td", { textContent: m.precision.toFixed(3) }),
+      el("td", { textContent: m.recall.toFixed(3) }),
+      el("td", { textContent: m.ndcg.toFixed(3) }),
+      el("td", { textContent: `${Math.round(m.coverage * 100)}%` }));
+    if (name.includes("published")) tr.className = "active";
+    return tr;
+  });
+  const head = el("tr", {}, ...["Model", "Precision@5", "Recall@5", "NDCG@5", "Coverage"].map((h) => el("th", { textContent: h, scope: "col" })));
+  root.append(
+    el("h3", { textContent: "How good are the picks?" }),
+    el("p", { className: "muted", textContent: "Each simulated traveller's most recent 20% of trips were hidden from training. A pick counts as a hit if they later rated that place 4 or 5. Higher is better." }),
+    el("div", { className: "metrics-wrap" }, el("table", { className: "metrics" }, el("thead", {}, head), el("tbody", {}, ...rows))));
 }
 
 let booted = false;
 async function boot() {
   try {
-    const { destinations, types, meta } = await backend.init(cfg.modelUrl);
+    const { destinations, types, meta, metrics } = await backend.init(cfg.modelUrl);
     state.destinations = destinations;
     state.byId = new Map(destinations.map((d) => [d.id, d]));
     state.types = types;
     renderMeta(meta);
+    renderMetrics(metrics);
     if (!booted) {
       booted = true;
       fillSelect("f-month", MONTHS.map((m, i) => [i + 1, m]), "month", Number);

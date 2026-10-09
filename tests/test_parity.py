@@ -13,6 +13,7 @@ import pytest
 from recsys.catalog import TYPES
 from recsys.export_web import build_hybrid, export
 from recsys.hybrid import Filters
+from recsys.train import Config, fit, load_csv_data
 
 ROOT = Path(__file__).resolve().parent.parent
 NODE = shutil.which("node")
@@ -50,9 +51,17 @@ def _cases(hybrid, inter, n_random: int = 60) -> list[dict]:
     return cases
 
 
+def _mf_hybrid():
+    data = load_csv_data()
+    cfg = Config(cf={"kind": "mf", "factors": 16, "reg": 5.0}, alpha_max=0.3, content_share=0.75)
+    _, inter = build_hybrid()
+    return fit(data, data.ratings, cfg), inter
+
+
 @pytest.mark.skipif(NODE is None, reason="node is not installed")
-def test_browser_and_python_agree(tmp_path):
-    hybrid, inter = build_hybrid()
+@pytest.mark.parametrize("engine", ["item-knn", "mf"])
+def test_browser_and_python_agree(tmp_path, engine):
+    hybrid, inter = build_hybrid() if engine == "item-knn" else _mf_hybrid()
     model_path = export(tmp_path, hybrid=hybrid)
     cases = _cases(hybrid, inter)
     (tmp_path / "cases.json").write_text(json.dumps(cases))

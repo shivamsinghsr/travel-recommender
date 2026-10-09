@@ -5,6 +5,8 @@ from __future__ import annotations
 import datetime as dt
 
 from sqlalchemy import (
+    JSON,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -28,6 +30,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     preferences: Mapped[str] = mapped_column(String(200), default="")  # "Beach|Heritage"
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     ratings: Mapped[list[Rating]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -69,3 +72,19 @@ class Rating(Base):
 
     user: Mapped[User] = relationship(back_populates="ratings")
     destination: Mapped[Destination] = relationship()
+
+
+class ModelVersion(Base):
+    """One row per trained model. Exactly one row is active; the API serves that one."""
+
+    __tablename__ = "model_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    version: Mapped[str] = mapped_column(String(40), unique=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    artifact_path: Mapped[str] = mapped_column(String(500))  # relative to MODELS_DIR
+    config: Mapped[dict] = mapped_column(JSON)
+    metrics: Mapped[dict] = mapped_column(JSON)
+    n_ratings: Mapped[int] = mapped_column(Integer)
+    data_fingerprint: Mapped[str] = mapped_column(String(32))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, index=True)

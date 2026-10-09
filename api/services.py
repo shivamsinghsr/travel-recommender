@@ -58,7 +58,7 @@ class RecommenderService:
             select(models.Rating.user_id, models.Rating.destination_id, models.Rating.rating)
         ).all()
         inter = Interactions.from_ratings((Rating(u, d, float(r)) for u, d, r in rows), item_ids=[d.id for d in dests])
-        model = HybridRecommender(dests, ItemKNN().fit(inter), inter)
+        model = HybridRecommender.from_interactions(dests, ItemKNN().fit(inter), inter)
         with self._lock:
             self.model = model
             self._fingerprint = self.fingerprint(session)

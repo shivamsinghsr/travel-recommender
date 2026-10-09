@@ -32,10 +32,16 @@ class DestinationOut(BaseModel):
         return [int(m) for m in v.split("|") if m] if isinstance(v, str) else v
 
 
-class UserCreate(BaseModel):
+class RegisterIn(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
     preferences: list[DestinationType] = Field(default_factory=list, max_length=8)
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
 
 
 class UserUpdate(BaseModel):
@@ -48,6 +54,13 @@ class UserOut(BaseModel):
     name: str
     email: str
     preferences: list[str]
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
+    expires_in: int = Field(description="Seconds until the token expires")
+    user: UserOut
 
 
 class RatingIn(BaseModel):
@@ -78,11 +91,20 @@ class RecommendationsOut(BaseModel):
     user_id: int
     strategy: Literal["popular", "content", "hybrid", "cf"]
     alpha: float = Field(description="Weight given to collaborative filtering (0-1)")
+    model_version: str
     items: list[RecommendationOut]
+
+
+class ModelOut(BaseModel):
+    version: str
+    description: str
+    config: dict | None
+    metrics: dict | None
 
 
 class HealthOut(BaseModel):
     status: Literal["ok", "degraded"]
     database: bool
+    cache: str
     ratings: int
-    recommender: str
+    model_version: str

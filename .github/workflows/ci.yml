@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint and test (SQLite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest
+
+  test-postgres:
+    name: Test (PostgreSQL + Redis)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel
+          POSTGRES_DB: travel_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U travel" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://travel:travel@localhost:5432/travel_test
+      TEST_REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
+
+  docker:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start the full stack
+        run: docker compose up --build -d --wait --wait-timeout 300
+      - name: Check health, sign-in and recommendations
+        run: |
+          curl -fsS localhost:8000/api/health | tee health.json
+          grep -q '"cache":"redis"' health.json
+          TOKEN=$(curl -fsS -X POST localhost:8000/api/auth/login -H 'Content-Type: application/json' \
+            -d '{"email":"traveller1@example.com","password":"travel-demo"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+          curl -fsS -H "Authorization: Bearer $TOKEN" "localhost:8000/api/users/1/recommendations?k=3" | tee recs.json
+          python3 -c "import json;d=json.load(open('recs.json'));assert len(d['items'])==3 and d['model_version']!='live-fit',d"
+          curl -fsS localhost:8000/ | grep -q "Where next?"
+      - name: Logs
+        if: always()
+        run: docker compose logs --no-color | tail -200
+      - if: always()
+        run: docker compose down -v

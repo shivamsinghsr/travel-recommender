@@ -206,6 +206,9 @@ select, input[type="search"], input[type="text"], input[type="email"], input[typ
 .how h2 { font: 400 1.5rem/1.2 var(--display); }
 .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 32px; }
 .how-grid p { max-width: 48ch; }
+#metrics { display: grid; gap: 8px; }
+#metrics h3 { font: 400 1.2rem/1.2 var(--display); }
+#metrics p { max-width: 70ch; font-size: 0.95rem; }
 .metrics { border-collapse: collapse; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
 .metrics th, .metrics td { text-align: left; padding: 6px 16px 6px 0; border-bottom: 1px solid var(--line); }
 .metrics th { font-weight: 600; }

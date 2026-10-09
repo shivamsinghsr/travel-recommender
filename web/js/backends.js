@@ -28,7 +28,10 @@ export class DemoBackend {
     }]));
     this.active = store.get("wn.active", "you");
     if (this.active !== "you" && !this.personas.has(this.active)) this.active = "you";
-    return { destinations: this.model.destinations, types: this.model.types, meta: this.model.meta };
+    return {
+      destinations: this.model.destinations, types: this.model.types, meta: this.model.meta,
+      metrics: this.model.metrics,
+    };
   }
 
   choices() {
@@ -72,14 +75,14 @@ export class ApiBackend {
   constructor(base = "") { this.base = base; }
 
   async _req(path, { method = "GET", body } = {}) {
-    const res = await fetch(this.base + path, {
-      method,
-      headers: body ? { "Content-Type": "application/json" } : {},
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const headers = {};
+    if (body) headers["Content-Type"] = "application/json";
+    if (this.token) headers.Authorization = `Bearer ${this.token}`;
+    const res = await fetch(this.base + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
     if (res.status === 204) return null;
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (res.status === 401 && this.token) this.signOut(); // expired or revoked session
       const detail = Array.isArray(data.detail) ? data.detail.map((d) => d.msg).join("; ") : data.detail;
       const err = new Error(detail || `Request failed (${res.status})`);
       err.status = res.status;
@@ -89,47 +92,59 @@ export class ApiBackend {
   }
 
   async init() {
-    const destinations = await this._req("/api/destinations");
+    const [destinations, model] = await Promise.all([this._req("/api/destinations"), this._req("/api/model")]);
     const types = [...new Set(destinations.map((d) => d.type))];
-    const health = await this._req("/api/health");
-    this.userId = store.get("wn.userId", null);
-    if (this.userId) {
-      try { await this._req(`/api/users/${this.userId}`); } catch { this.userId = null; store.remove("wn.userId"); }
+    this.token = store.get("wn.token", null);
+    this.user = null;
+    if (this.token) {
+      try { this.user = await this._req("/api/me"); } catch { this.signOut(); }
     }
-    return { destinations, types, meta: { cf_model: health.recommender, n_ratings: health.ratings } };
+    return {
+      destinations, types,
+      meta: {
+        model_version: model.version,
+        cf_model: model.config
+          ? `hybrid ${model.config.cf.kind}, alpha_max ${model.config.alpha_max}, content ${model.config.content_share}`
+          : "item-based model fitted from live ratings",
+      },
+      metrics: model.metrics,
+    };
   }
 
-  get signedIn() { return this.userId != null; }
+  get signedIn() { return this.user != null; }
 
-  async createAccount({ name, email, preferences }) {
-    const user = await this._req("/api/users", { method: "POST", body: { name, email, preferences } });
-    this.userId = user.id; store.set("wn.userId", user.id);
+  _session(body) {
+    this.token = body.access_token; this.user = body.user;
+    store.set("wn.token", this.token);
   }
 
-  async useExisting(id) {
-    await this._req(`/api/users/${id}`);
-    this.userId = Number(id); store.set("wn.userId", this.userId);
+  async register({ name, email, password }) {
+    this._session(await this._req("/api/auth/register", { method: "POST", body: { name, email, password, preferences: [] } }));
   }
 
-  signOut() { this.userId = null; store.remove("wn.userId"); }
+  async login({ email, password }) {
+    this._session(await this._req("/api/auth/login", { method: "POST", body: { email, password } }));
+  }
+
+  signOut() { this.token = null; this.user = null; store.remove("wn.token"); }
 
   async current() {
     const [user, ratings] = await Promise.all([
-      this._req(`/api/users/${this.userId}`),
-      this._req(`/api/users/${this.userId}/ratings`),
+      this._req("/api/me"),
+      this._req(`/api/users/${this.user.id}/ratings`),
     ]);
     return { ...user, ratings: ratings.map((r) => [r.destination_id, r.rating]) };
   }
 
   async setPreferences(preferences) {
-    await this._req(`/api/users/${this.userId}`, { method: "PATCH", body: { preferences } });
+    await this._req(`/api/users/${this.user.id}`, { method: "PATCH", body: { preferences } });
   }
 
   async rate(id, rating) {
-    await this._req(`/api/users/${this.userId}/ratings`, { method: "POST", body: { destination_id: id, rating } });
+    await this._req(`/api/users/${this.user.id}/ratings`, { method: "POST", body: { destination_id: id, rating } });
   }
 
-  async unrate(id) { await this._req(`/api/users/${this.userId}/ratings/${id}`, { method: "DELETE" }); }
+  async unrate(id) { await this._req(`/api/users/${this.user.id}/ratings/${id}`, { method: "DELETE" }); }
 
   async clearRatings() {
     const { ratings } = await this.current();
@@ -139,6 +154,6 @@ export class ApiBackend {
   async recommend({ k, filters }) {
     const q = new URLSearchParams({ k });
     for (const [key, v] of Object.entries(filters)) if (v) q.set(key, v);
-    return this._req(`/api/users/${this.userId}/recommendations?${q}`);
+    return this._req(`/api/users/${this.user.id}/recommendations?${q}`);
   }
 }

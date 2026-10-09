@@ -1,5 +1,13 @@
 # Full stack on your machine:  docker compose up --build
-# Then open http://localhost:8000 (web app) or http://localhost:8000/docs (API docs).
+# Web app: http://localhost:8000   API docs: http://localhost:8000/docs
+# Sample travellers sign in as traveller1@example.com ... traveller800@example.com, password: travel-demo
+x-app-env: &app-env
+  DATABASE_URL: postgresql://travel:travel@db:5432/travel
+  REDIS_URL: redis://redis:6379/0
+  SECRET_KEY: ${SECRET_KEY:-local-development-secret-not-for-production-use}
+  DEMO_PASSWORD: ${DEMO_PASSWORD:-travel-demo}
+  MODEL_CHECK_SECONDS: "60"
+
 services:
   db:
     image: postgres:16-alpine
@@ -15,15 +23,43 @@ services:
       timeout: 3s
       retries: 20
 
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   api:
     build: .
+    command: ["api"]
     environment:
-      DATABASE_URL: postgresql://travel:travel@db:5432/travel
+      <<: *app-env
+      TRAIN_ON_START: "1"
     ports:
       - "8000:8000"
+    volumes:
+      - models:/app/models
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Retrains every 24 hours; the API swaps in a better model without restarting.
+  scheduler:
+    build: .
+    command: ["scheduler"]
+    environment:
+      <<: *app-env
+      TRAIN_INTERVAL_SECONDS: "86400"
+    volumes:
+      - models:/app/models
+    depends_on:
+      api:
         condition: service_healthy
 
 volumes:
   pgdata:
+  models:

@@ -45,7 +45,7 @@ def pick_personas(users: list[dict], inter: Interactions, n_ratings=(8, 14)) -> 
 def build_hybrid(data_dir: Path = DATA_DIR) -> tuple[HybridRecommender, Interactions]:
     dests = load_destinations(data_dir / "destinations.csv")
     inter = Interactions.from_ratings(load_ratings(data_dir / "ratings.csv"), item_ids=[d.id for d in dests])
-    return HybridRecommender(dests, ItemKNN().fit(inter), inter), inter
+    return HybridRecommender.from_interactions(dests, ItemKNN().fit(inter), inter), inter
 
 
 def export(out_dir: Path, data_dir: Path = DATA_DIR, extra_meta: dict | None = None,
