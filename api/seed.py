@@ -1,8 +1,9 @@
-"""Load the CSVs in data/ into an empty database.
+"""Migrate the database to the latest schema and load data/*.csv into it.
 
     python -m api.seed
 
-Safe to run repeatedly: it does nothing if destinations already exist.
+Safe to run on every deploy: migrations are idempotent and the data load
+does nothing once destinations exist.
 """
 
 from __future__ import annotations
@@ -11,14 +12,24 @@ import csv
 import datetime as dt
 from pathlib import Path
 
-from sqlalchemy import select
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from recsys.catalog import DATA_DIR, load_destinations
 
 from . import models
-from .config import get_settings
-from .db import Base, Database
+from .config import ROOT, get_settings
+from .db import Database
+
+
+def migrate(database_url: str) -> None:
+    cfg = Config(str(ROOT / "alembic.ini"))
+    cfg.set_main_option("script_location", str(ROOT / "migrations"))
+    cfg.attributes["database_url"] = database_url
+    cfg.attributes["configure_logger"] = False
+    command.upgrade(cfg, "head")
 
 
 def seed(session: Session, data_dir: Path = DATA_DIR) -> bool:
@@ -47,13 +58,21 @@ def seed(session: Session, data_dir: Path = DATA_DIR) -> bool:
             )
             for row in csv.DictReader(fh)
         )
+    session.flush()
+    if session.bind.dialect.name == "postgresql":
+        # Explicit ids were inserted above; move the sequences past them so new rows don't collide.
+        for table in ("users", "destinations"):
+            session.execute(text(
+                f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), (SELECT MAX(id) FROM {table}))"
+            ))
     session.commit()
     return True
 
 
 def main() -> None:
-    db = Database(get_settings().database_url)
-    Base.metadata.create_all(db.engine)
+    url = get_settings().database_url
+    migrate(url)
+    db = Database(url)
     with db.SessionLocal() as s:
         print("seeded" if seed(s) else "already seeded, nothing to do")
 

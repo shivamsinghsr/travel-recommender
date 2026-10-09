@@ -11,6 +11,9 @@ RUN pip install -r requirements.txt
 COPY recsys ./recsys
 COPY api ./api
 COPY data ./data
+COPY web ./web
+COPY migrations ./migrations
+COPY alembic.ini .
 
 RUN useradd --create-home appuser && chown -R appuser /app
 USER appuser

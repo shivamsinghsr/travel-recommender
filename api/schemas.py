@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from recsys.catalog import TYPES
 
@@ -32,6 +32,40 @@ class DestinationOut(BaseModel):
         return [int(m) for m in v.split("|") if m] if isinstance(v, str) else v
 
 
+class UserCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    email: EmailStr
+    preferences: list[DestinationType] = Field(default_factory=list, max_length=8)
+
+
+class UserUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    preferences: list[DestinationType] | None = Field(default=None, max_length=8)
+
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    preferences: list[str]
+
+
+class RatingIn(BaseModel):
+    destination_id: int
+    rating: int = Field(ge=1, le=5)
+    review_text: str | None = Field(default=None, max_length=1000)
+    visited_on: dt.date | None = None
+
+
+class RatingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    destination_id: int
+    rating: int
+    review_text: str | None
+    visited_on: dt.date | None
+
+
 class RecommendationOut(BaseModel):
     destination: DestinationOut
     score: float = Field(description="Ranking score in [0, 1]")
@@ -42,17 +76,9 @@ class RecommendationOut(BaseModel):
 
 class RecommendationsOut(BaseModel):
     user_id: int
-    strategy: str
+    strategy: Literal["popular", "content", "hybrid", "cf"]
+    alpha: float = Field(description="Weight given to collaborative filtering (0-1)")
     items: list[RecommendationOut]
-
-
-class RatingOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    destination_id: int
-    rating: int
-    review_text: str | None
-    visited_on: dt.date | None
 
 
 class HealthOut(BaseModel):

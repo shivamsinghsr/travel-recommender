@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Where next? Travel picks across India</title>
+  <meta name="description" content="Personalised travel recommendations for 66 Indian destinations, from a hybrid collaborative and content-based recommender.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Rozha+One&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c2547'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23e3a018'/%3E%3C/svg%3E">
+  <script src="config.js"></script>
+</head>
+<body>
+  <a class="skip" href="#results">Skip to recommendations</a>
+
+  <header class="masthead">
+    <div class="wrap masthead-row">
+      <div>
+        <h1 class="wordmark">Where next?</h1>
+        <p class="tagline">Travel picks across India, tuned to the places you've liked.</p>
+      </div>
+      <nav class="masthead-links" aria-label="Project">
+        <a href="#how">How it works</a>
+        <a href="https://github.com/shivamsinghsr/travel-recommender">Source on GitHub</a>
+      </nav>
+    </div>
+    <p class="wrap mode-note" id="mode-note" hidden></p>
+  </header>
+
+  <main class="wrap layout">
+    <aside class="panel" aria-label="Your profile">
+      <section class="panel-block" id="who-block">
+        <h2 class="panel-title">Travelling as</h2>
+        <div id="who"></div>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-title">What do you enjoy?</h2>
+        <div class="chips" id="interests" role="group" aria-label="Interests"></div>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-title">Narrow it down</h2>
+        <div class="filters">
+          <label>When are you going?
+            <select id="f-month"><option value="">Any month</option></select>
+          </label>
+          <label>Kind of place
+            <select id="f-type"><option value="">Any kind</option></select>
+          </label>
+          <label>State
+            <select id="f-state"><option value="">Anywhere in India</option></select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel-block">
+        <div class="panel-title-row">
+          <h2 class="panel-title">Places you've rated <span class="count" id="rated-count"></span></h2>
+          <button type="button" class="text-button" id="clear-ratings" hidden>Clear all</button>
+        </div>
+        <ul class="rated" id="rated"></ul>
+      </section>
+    </aside>
+
+    <section class="results" id="results" aria-live="polite" tabindex="-1">
+      <div class="results-head">
+        <h2 class="results-title">Your next five</h2>
+        <p class="strategy" id="strategy"></p>
+        <div class="blend" id="blend" aria-hidden="true">
+          <span class="blend-bar"><span class="blend-cf" id="blend-cf"></span></span>
+          <span class="blend-legend"><span>Your interests</span><span>Travellers like you</span></span>
+        </div>
+      </div>
+      <ol class="tickets" id="tickets"></ol>
+      <p class="empty" id="empty" hidden>No places match these filters. Try another month, kind of place or state.</p>
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <section class="browse" aria-labelledby="browse-title">
+        <h2 id="browse-title">Been somewhere already?</h2>
+        <p class="muted">Rate places you've visited. Every rating changes your picks straight away.</p>
+        <label class="search">
+          <span class="visually-hidden">Search destinations</span>
+          <input type="search" id="search" placeholder="Search by place, state or kind" autocomplete="off">
+        </label>
+        <ul class="catalogue" id="catalogue"></ul>
+      </section>
+    </section>
+  </main>
+
+  <footer class="wrap how" id="how">
+    <h2>How it works</h2>
+    <div class="how-grid">
+      <p><strong>New here?</strong> Your picks come from the kinds of places you say you enjoy, matched against each destination's type, region and season, plus how well other travellers rate it.</p>
+      <p><strong>After a few ratings</strong> the weight shifts to collaborative filtering: places rated highly by travellers whose ratings resemble yours. From five ratings on, that decides alone.</p>
+      <p><strong>Filters come first.</strong> Pick a month and you only see places that are in season then. Places you've rated never come back as suggestions.</p>
+    </div>
+    <p class="muted model-meta" id="model-meta"></p>
+    <p class="muted small">Destinations are real. Traveller ratings are simulated for this demo.</p>
+  </footer>
+
+  <template id="ticket-tpl">
+    <li class="ticket">
+      <div class="ticket-main">
+        <h3 class="ticket-name"></h3>
+        <p class="ticket-where"><span class="t-state"></span><span class="t-type"></span></p>
+        <div class="season" role="img"></div>
+        <p class="ticket-reason"></p>
+        <div class="rate-row">
+          <span class="rate-label">Been there?</span>
+          <span class="stars" role="group"></span>
+        </div>
+      </div>
+      <div class="ticket-stub">
+        <span class="stub-value"></span>
+        <span class="stub-label"></span>
+      </div>
+    </li>
+  </template>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

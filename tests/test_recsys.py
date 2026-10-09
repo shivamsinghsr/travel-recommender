@@ -4,6 +4,8 @@ import numpy as np
 
 from recsys.catalog import STATE_REGION, TYPES, load_destinations
 from recsys.data import Interactions, Rating, load_ratings
+from recsys.export_web import build_hybrid
+from recsys.hybrid import Filters
 from recsys.simulate import simulate
 from recsys.user_knn import UserKNN
 
@@ -66,3 +68,38 @@ def test_similarity_is_symmetric_and_bounded():
     sim = UserKNN().fit(inter).sim
     assert np.allclose(sim, sim.T)
     assert sim.max() <= 1.0 + 1e-9 and sim.min() >= -1.0 - 1e-9
+
+
+# ---- Phase 2: content-based + item-based CF + hybrid ----------------------
+
+
+def test_hybrid_alpha_schedule():
+    hybrid, _ = build_hybrid()
+    assert hybrid.recommend({}, []).strategy == "popular"
+    assert hybrid.recommend({}, ["Beach"]).strategy == "content"
+    one = hybrid.recommend({10: 5}, ["Beach"])
+    assert one.strategy == "hybrid" and one.alpha == 0.2
+    five = hybrid.recommend({10: 5, 11: 4, 19: 5, 26: 4, 49: 5}, [])
+    assert five.strategy == "cf" and five.alpha == 1.0
+
+
+def test_content_follows_stated_interest():
+    hybrid, _ = build_hybrid()
+    names = {d.id: d for d in hybrid.destinations}
+    for t in ("Beach", "Wildlife", "Hill Station"):
+        res = hybrid.recommend({}, [t], k=4)
+        assert all(names[r.destination_id].type == t for r in res.items), t
+
+
+def test_filters_and_exclusions():
+    hybrid, _ = build_hybrid()
+    names = {d.id: d for d in hybrid.destinations}
+    res = hybrid.recommend({27: 5, 30: 4}, ["Adventure"], k=10, filters=Filters(month=7, type="Adventure"))
+    for r in res.items:
+        d = names[r.destination_id]
+        assert d.type == "Adventure" and 7 in d.best_months and d.id not in (27, 30)
+
+
+def test_ratings_outside_catalogue_are_ignored():
+    hybrid, _ = build_hybrid()
+    assert hybrid.recommend({99999: 5}, []).strategy == "popular"
