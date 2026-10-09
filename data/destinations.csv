@@ -1,0 +1,67 @@
+id,name,state,type,best_months,description
+1,Taj Mahal (Agra),Uttar Pradesh,Heritage,10|11|12|1|2|3,White-marble Mughal mausoleum on the Yamuna; go at sunrise to beat the crowds.
+2,Varanasi,Uttar Pradesh,Spiritual,10|11|12|1|2|3,Ancient city of ghats on the Ganga with the evening Ganga Aarti.
+3,Jaipur,Rajasthan,Heritage,10|11|12|1|2|3,"The Pink City: Amber Fort, Hawa Mahal and busy old bazaars."
+4,Udaipur,Rajasthan,Heritage,9|10|11|12|1|2|3,Lake palaces and rooftop sunsets over Lake Pichola.
+5,Jaisalmer,Rajasthan,Adventure,10|11|12|1|2|3,Golden sandstone fort and camel safaris into the Thar Desert.
+6,Jodhpur,Rajasthan,Heritage,10|11|12|1|2|3,Blue City below the towering Mehrangarh Fort.
+7,Ranthambore National Park,Rajasthan,Wildlife,10|11|12|1|2|3|4,Tiger reserve around a ruined 10th-century fort.
+8,Pushkar,Rajasthan,Spiritual,10|11|12|1|2|3,Holy lake town with the Brahma temple and a famous camel fair.
+9,Mount Abu,Rajasthan,Hill Station,10|11|12|1|2|3,Rajasthan's only hill station; Dilwara Jain temples and Nakki Lake.
+10,North Goa Beaches,Goa,Beach,11|12|1|2|3,"Lively beaches, shacks and nightlife from Baga to Arambol."
+11,Gokarna,Karnataka,Beach,10|11|12|1|2|3,Quiet crescent beaches linked by cliff-top walking trails.
+12,Hampi,Karnataka,Heritage,10|11|12|1|2,Boulder-strewn ruins of the Vijayanagara capital.
+13,Coorg,Karnataka,Hill Station,10|11|12|1|2|3,"Misty coffee estates, waterfalls and Kodava cuisine."
+14,Mysuru,Karnataka,Heritage,10|11|12|1|2,Mysore Palace lit up at night and the Dasara festival.
+15,Chikmagalur,Karnataka,Hill Station,9|10|11|12|1|2|3,Coffee country with treks up Mullayanagiri peak.
+16,Bengaluru,Karnataka,City,9|10|11|12|1|2,"Garden city of craft breweries, cafes and Cubbon Park."
+17,Alleppey Backwaters,Kerala,Nature,9|10|11|12|1|2|3,Houseboat cruises through palm-lined canals and paddy fields.
+18,Munnar,Kerala,Hill Station,9|10|11|12|1|2|3,Rolling tea gardens in the Western Ghats.
+19,Varkala,Kerala,Beach,10|11|12|1|2|3,Red laterite cliffs above a long sandy beach.
+20,Kochi,Kerala,City,10|11|12|1|2|3,"Chinese fishing nets, spice markets and colonial Fort Kochi."
+21,Periyar (Thekkady),Kerala,Wildlife,10|11|12|1|2|3,Boat safaris on Periyar Lake in an elephant and tiger reserve.
+22,Ooty,Tamil Nadu,Hill Station,3|4|5|6|10|11,Nilgiri hill town with a UNESCO-listed toy train.
+23,Kodaikanal,Tamil Nadu,Hill Station,4|5|6|9|10,Star-shaped lake and pine forests in the Palani Hills.
+24,Madurai,Tamil Nadu,Spiritual,10|11|12|1|2|3,The towering gopurams of Meenakshi Amman Temple.
+25,Mahabalipuram,Tamil Nadu,Heritage,11|12|1|2,Pallava rock-cut temples beside the Bay of Bengal.
+26,Puducherry,Puducherry,Beach,10|11|12|1|2|3,French Quarter streets and a seafront promenade.
+27,Leh-Ladakh,Ladakh,Adventure,5|6|7|8|9,"High-altitude passes, monasteries and Pangong Lake."
+28,Srinagar,Jammu and Kashmir,Nature,4|5|6|7|8|9|10,Shikara rides on Dal Lake and Mughal gardens.
+29,Gulmarg,Jammu and Kashmir,Adventure,12|1|2|3|5|6,Ski slopes in winter and one of the world's highest gondolas.
+30,Manali,Himachal Pradesh,Adventure,3|4|5|6|10|11|12,Gateway to Rohtang and Solang for paragliding and snow.
+31,Shimla,Himachal Pradesh,Hill Station,3|4|5|6|12|1,Colonial-era summer capital along the Mall Road ridge.
+32,Dharamshala (McLeod Ganj),Himachal Pradesh,Spiritual,3|4|5|6|9|10|11,Home of the Dalai Lama with Tibetan cafes and the Triund trek.
+33,Spiti Valley,Himachal Pradesh,Adventure,6|7|8|9,Cold desert valley of cliff-top monasteries and remote villages.
+34,Kasol (Parvati Valley),Himachal Pradesh,Adventure,3|4|5|6|9|10|11,Riverside base for Kheerganga and Malana treks.
+35,Rishikesh,Uttarakhand,Adventure,3|4|5|9|10|11,White-water rafting on the Ganga and yoga ashrams.
+36,Haridwar,Uttarakhand,Spiritual,10|11|12|1|2|3|4,Ganga Aarti at Har Ki Pauri where the river leaves the hills.
+37,Nainital,Uttarakhand,Hill Station,3|4|5|6|10|11,Lake town ringed by Kumaon hills.
+38,Jim Corbett National Park,Uttarakhand,Wildlife,11|12|1|2|3|4|5|6,India's oldest national park and a classic tiger safari.
+39,Valley of Flowers,Uttarakhand,Nature,7|8|9,Alpine meadows that bloom only during the monsoon.
+40,Auli,Uttarakhand,Adventure,12|1|2|3,Ski resort with views of Nanda Devi.
+41,Darjeeling,West Bengal,Hill Station,3|4|5|10|11,Tea estates and Kanchenjunga sunrise from Tiger Hill.
+42,Kolkata,West Bengal,City,10|11|12|1|2|3,"Victoria Memorial, College Street and legendary street food."
+43,Sundarbans,West Bengal,Wildlife,9|10|11|12|1|2|3,Mangrove delta and home of the Royal Bengal tiger.
+44,Gangtok,Sikkim,Hill Station,3|4|5|6|10|11|12,"Monasteries, MG Marg and trips to Tsomgo Lake."
+45,Shillong,Meghalaya,Hill Station,10|11|12|1|2|3|4|5,Pine-covered hills and the music scene of the northeast.
+46,Cherrapunji (Sohra),Meghalaya,Nature,6|7|8|9|10,Living root bridges and some of the wettest hills on earth.
+47,Kaziranga National Park,Assam,Wildlife,11|12|1|2|3|4,Grasslands holding most of the world's one-horned rhinos.
+48,Tawang,Arunachal Pradesh,Spiritual,3|4|5|9|10,India's largest monastery at 3000 m near Sela Pass.
+49,Havelock Island (Swaraj Dweep),Andaman and Nicobar Islands,Beach,10|11|12|1|2|3|4|5,Radhanagar Beach and scuba diving over coral reefs.
+50,Lakshadweep,Lakshadweep,Beach,10|11|12|1|2|3|4|5,Turquoise lagoons and coral atolls in the Arabian Sea.
+51,Mumbai,Maharashtra,City,11|12|1|2,"Marine Drive, Gateway of India and Bollywood energy."
+52,Ajanta and Ellora Caves,Maharashtra,Heritage,7|8|9|10|11|12|1|2|3,Rock-cut Buddhist murals and the monolithic Kailasa temple.
+53,Lonavala,Maharashtra,Hill Station,6|7|8|9|10,Monsoon waterfalls and forts in the Sahyadri hills.
+54,Mahabaleshwar,Maharashtra,Hill Station,10|11|12|1|2|3|4|5,Strawberry farms and valley viewpoints.
+55,Delhi,Delhi,City,10|11|12|1|2|3,"Red Fort, Qutub Minar and Old Delhi food lanes."
+56,Amritsar,Punjab,Spiritual,10|11|12|1|2|3,The Golden Temple and the Wagah border ceremony.
+57,Khajuraho,Madhya Pradesh,Heritage,10|11|12|1|2|3,Chandela-era temples covered in intricate sculpture.
+58,Kanha National Park,Madhya Pradesh,Wildlife,10|11|12|1|2|3|4|5|6,Sal forests and meadows that inspired The Jungle Book.
+59,Bandhavgarh National Park,Madhya Pradesh,Wildlife,10|11|12|1|2|3|4|5|6,One of the highest tiger densities in India.
+60,Gir National Park,Gujarat,Wildlife,12|1|2|3|4,The last wild home of the Asiatic lion.
+61,Rann of Kutch,Gujarat,Nature,11|12|1|2,White salt desert that glows under the full moon.
+62,Diu,Dadra and Nagar Haveli and Daman and Diu,Beach,10|11|12|1|2|3,Quiet beaches and a Portuguese sea fort.
+63,Hyderabad,Telangana,City,10|11|12|1|2|3,"Charminar, Golconda Fort and biryani."
+64,Puri,Odisha,Spiritual,10|11|12|1|2|3,Jagannath Temple and a long golden beach.
+65,Konark Sun Temple,Odisha,Heritage,10|11|12|1|2|3,13th-century temple built as a giant stone chariot.
+66,Bodh Gaya,Bihar,Spiritual,10|11|12|1|2|3,Mahabodhi Temple where the Buddha attained enlightenment.
