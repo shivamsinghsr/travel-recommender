@@ -65,7 +65,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Start the full stack
-        run: docker compose up --build -d --wait --wait-timeout 300
+        run: |
+          set -o pipefail
+          docker compose up --build -d --wait --wait-timeout 300 2>&1 | tee compose-up.log
       - name: Check health, sign-in and recommendations
         run: |
           curl -fsS localhost:8000/api/health | tee health.json
@@ -81,6 +83,8 @@ jobs:
       - name: Report container logs as annotations
         if: failure()
         run: |
+          body=$( (tail -25 compose-up.log; docker compose ps -a) 2>&1 | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=compose up::$body"
           for svc in api scheduler db redis; do
             body=$(docker compose logs --no-color --tail 40 "$svc" 2>&1 | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
             echo "::error title=$svc logs::$body"
