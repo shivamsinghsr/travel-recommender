@@ -51,8 +51,11 @@ services:
   scheduler:
     build: .
     command: ["scheduler"]
-    healthcheck:
-      disable: true  # the image's check probes the API port, which this role doesn't serve
+    healthcheck:  # the image's default check probes the API port, which this role doesn't serve
+      test: ["CMD", "python", "-c", "import api.train"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
     environment:
       <<: *app-env
       TRAIN_INTERVAL_SECONDS: "86400"
